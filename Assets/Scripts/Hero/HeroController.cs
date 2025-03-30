@@ -8,6 +8,8 @@ using UnityEngine.InputSystem.XR;
 
 public class HeroController : MonoBehaviour
 {
+    public static HeroController Instance;
+
     public bool CanMove { get; private set; } = true;
     private bool IsSprinting => canSprint && _input.sprint;
     private bool ShouldJump => _input.jump && characterController.isGrounded;
@@ -22,8 +24,8 @@ public class HeroController : MonoBehaviour
     [SerializeField] private bool canUseTool = true;
 
     [Header("Inputs")]
-    [SerializeField] private StarterAssetsInputs _input;
-    [SerializeField] private PlayerInput _playerInput;
+    public StarterAssetsInputs _input;
+    public PlayerInput _playerInput;
 
     [Header("Movement Parameters")]
     [SerializeField] private float walkSpeed = 3.0f;
@@ -83,6 +85,16 @@ public class HeroController : MonoBehaviour
 
     private void Awake()
     {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(this);
+            throw new System.Exception("An instance of this singleton already exists.");
+        }
+        else
+        {
+            Instance = (HeroController)this;
+        }
+
         _input = GetComponent<StarterAssetsInputs>();
         playerCamera = GetComponentInChildren<Camera>();
         virtualCamera = GetComponentInChildren<CinemachineVirtualCamera>();
@@ -114,11 +126,8 @@ public class HeroController : MonoBehaviour
                 HandleInteractionInput();
             }
 
-            if(canUseTool)
-            {
-                //HandleUseInHandToolCheck();
-                HandleUseInHandToolInput();
-            }
+            InHandToolHoldInput();
+            InHandToolPressInput();
 
             ApplyFinalMovements();
         }
@@ -134,17 +143,36 @@ public class HeroController : MonoBehaviour
 
     private void HandleUseInHandToolInput()
     {
+        float useHold = _input.useHold;
         if(_input.use && inHandTool != null)
         {
-            inHandTool.OnUse();
-            useHoldTime = _input.useHold;
+            //inHandTool.OnUsePress(useHold);
+            UI_Manager.Instance.SetupHoldSlider(inHandTool.holdNecessary);
+            UI_Manager.Instance.UpdateHoldSlider(useHold);
         }
         else
         {
-            useHoldTime = 0;
+            UI_Manager.Instance.UpdateHoldSlider(0);
         }
     }
 
+    public void InHandToolHoldInput()
+    {
+        if (_input.use && inHandTool != null)
+        {
+            inHandTool.OnUseHold(_input.useHold);
+        }
+    }
+
+    public void InHandToolPressInput()
+    {
+        if (_input.use && inHandTool != null)
+        {
+            inHandTool.OnUsePress();
+        }
+    }
+
+    #region Movement
     private void HandleMovementInput()
     {
         currentInput = new Vector2((IsCrouching ? crouchSpeed : IsSprinting ? sprintSpeed : walkSpeed) * _input.move.y, walkSpeed * _input.move.x);
@@ -152,6 +180,14 @@ public class HeroController : MonoBehaviour
         float moveDirectionY = moveDirection.y;
         moveDirection = (transform.TransformDirection(Vector3.forward) * currentInput.x) + (transform.TransformDirection(Vector3.right) * currentInput.y);
         moveDirection.y = moveDirectionY;
+    }
+
+    private void ApplyFinalMovements()
+    {
+        if (!characterController.isGrounded)
+            moveDirection.y -= gravity * Time.deltaTime;
+
+        characterController.Move(moveDirection * Time.deltaTime);
     }
 
     private void HandleMouseLook()
@@ -215,6 +251,7 @@ public class HeroController : MonoBehaviour
 
         duringCrouchAnimation = false;
     }
+    #endregion
 
     private void HandleInteractionCheck()
     {
@@ -243,13 +280,5 @@ public class HeroController : MonoBehaviour
         {
             currentInteractable.OnInteract();
         }
-    }
-
-    private void ApplyFinalMovements()
-    {
-        if (!characterController.isGrounded)
-            moveDirection.y -= gravity * Time.deltaTime;
-
-        characterController.Move(moveDirection * Time.deltaTime);
     }
 }

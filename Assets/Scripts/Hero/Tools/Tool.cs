@@ -3,6 +3,7 @@ using UnityEngine;
 public abstract class Tool : MonoBehaviour
 {
     public enum UseType {Tap,Hold};
+    public float holdNecessary;
 
     void Start()
     {
@@ -14,7 +15,28 @@ public abstract class Tool : MonoBehaviour
         OnUpdate();
     }
 
-    public abstract void OnUpdate();
-    public abstract void OnUse();
-    public abstract bool IsInCooldown();
+    public virtual void OnUpdate()
+    {
+
+    }
+
+    public virtual void OnUsePress()
+    {
+
+    }
+
+    public virtual void OnUseRelease()
+    {
+
+    }
+
+    public virtual void OnUseHold(float holdDuration)
+    {
+
+    }
+
+    public virtual bool IsInCooldown()
+    {
+        return false;
+    }
 }

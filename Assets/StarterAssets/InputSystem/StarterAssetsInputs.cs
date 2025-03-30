@@ -1,3 +1,4 @@
+using Unity.VisualScripting;
 using UnityEngine;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
@@ -27,7 +28,6 @@ namespace StarterAssets
 		[Header("Mouse Cursor Settings")]
 		public bool cursorLocked = true;
 		public bool cursorInputForLook = true;
-		
 
         private void Update()
         {
@@ -41,58 +41,55 @@ namespace StarterAssets
 				interactHold += Time.deltaTime;
 			}
 
-			if (use && !useToolInput.ReadValue<bool>()) 
-			{
-				use = false;
-				useHold = 0;
-			}
-            else if (use && useToolInput.ReadValue<bool>())
+            if (use)
             {
                 useHold += Time.deltaTime;
+            }
+            else
+            {
+				useHold = 0;
             }
         }
 
 #if ENABLE_INPUT_SYSTEM
-        public void OnMove(InputValue value)
+        public void OnMove(InputAction.CallbackContext _context)
 		{
-			MoveInput(value.Get<Vector2>());
+			MoveInput(_context.ReadValue<Vector2>());
 		}
 
-		public void OnLook(InputValue value)
+		public void OnLook(InputAction.CallbackContext _context)
 		{
 			if(cursorInputForLook)
 			{
-				LookInput(value.Get<Vector2>());
+				LookInput(_context.ReadValue<Vector2>());
 			}
 		}
 
-		public void OnJump(InputValue value)
+		public void OnJump(InputAction.CallbackContext _context)
 		{
-			JumpInput(value.isPressed);
+			JumpInput(_context.performed);
 		}
 
-		public void OnSprint(InputValue value)
+		public void OnSprint(InputAction.CallbackContext _context)
 		{
-			SprintInput(value.isPressed);
-		}
-
-		public void OnCrouch(InputValue value)
-		{
-			CrouchInput(value.isPressed);
-		}
-
-        public void OnInteract(InputValue value)
-        {
-            InteractInput(value.isPressed);
+			SprintInput(_context.performed);
         }
 
-        public void OnUse(InputValue value)
+		public void OnCrouch(InputAction.CallbackContext _context)
+		{
+			CrouchInput(_context.performed);
+		}
+
+        public void OnInteract(InputAction.CallbackContext _context)
         {
-            InteractInput(value.isPressed);
+            InteractInput(_context.performed);
+        }
+
+        public void OnUsePress(InputAction.CallbackContext _context)
+        {
+            UseInput(_context.performed);
         }
 #endif
-
-
         public void MoveInput(Vector2 newMoveDirection)
 		{
 			move = newMoveDirection;
